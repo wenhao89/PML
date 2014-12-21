@@ -1,0 +1,190 @@
+---
+output: html_document
+---
+
+# Practical Machine Learning Course Project | Wen Hao Wong
+
+## 1. Exploratory Data Analysis
+
+From the data, we can observe that there are a total of 19622 observations and 160 variables (details in Annex)
+
+From the 160 variables, there are a number of variables which are likely to not be useful for predicting *classe* (the manner in which the exercise is done). These include, for example, the variables for user identity (*user_name*), time stamps (*raw_timestamp_part_1*, *raw_timestamp_part_2*, *cvtd_timestamp*) and variables with many null or NA values. The full list of variables to be removed is available in the Annex at the end of the main report.
+
+After cleaning up the data, there are a total of 19622 observations and 53 variables:
+
+```{r}
+setwd("/Users/wenhao/Desktop")
+data <- read.csv("pml-training.csv", header=TRUE)
+data1 <- cbind(data[ , 8:11], data[ , 37:49], data[ , 60:68], data[ , 84:86], data[ , 102], data[ , 113:124], data[ , 140], data[ , 151:160])
+colnames(data1)[30] <- "total_accel_dumbbell"
+colnames(data1)[43] <- "total_accel_forearm"
+str(data1)
+```
+
+## 2. Model Building & Accuracy
+
+The variable that we are trying to predict is *classe*, which is a factor/categorical variable. Thus, it would be more appropriate to build a **tree-based prediction model** as opposed to a regression-based prediction model (including linear discriminant analysis and naive Bayes). In addition, as we do not have any information about the underlying structure of the data, it would probably be more useful to use trees as opposed to regressions, which require us to make assumptions about the true structure of the data.
+
+There are three generic types of tree-based prediction models, of which I tried two to build my model (my computer was unable to handle the random forest method as it was extremely computationally demanding). For **cross-validation**, I used the k-fold validation method, with k=10:
+
+```{r, results='hide'}
+library(caret)
+```
+```{r}
+set.seed(123)
+train_control <- trainControl(method="cv", number=10)
+```
+
+### 2a. Trees
+
+Using the rpart method:
+
+```{r}
+set.seed(234)
+modA <- train(classe ~ ., data=data1, trControl=train_control, method="rpart")
+print(modA$finalModel)
+```
+
+As can be seen below, the accuracy of this model is 0.4956. This suggests that the expected out-of-sample accuracy will be less than 0.4956, and the **expected out-of-sample error** more than 0.5044.
+
+```{r}
+modA_pred <- predict(modA, newdata=data1)
+confusionMatrix(modA_pred, data1$classe)
+```
+
+### 2b. Trees with Boosting (*gbm*)
+
+Using the gbm method:
+
+```{r, results='hide'}
+library(gbm)
+```
+```{r}
+set.seed(345)
+modB <- train(classe ~ ., data=data1, trControl=train_control, method="gbm", verbose=FALSE)
+print(modB$finalModel)
+```
+
+As can be seen below, the accuracy of this model is 0.9717. This suggests that the expected out-of-sample accuracy will be less than 0.9717, and the **expected out-of-sample error** more than 0.0283.
+
+```{r}
+modB_pred <- predict(modB, newdata=data1)
+confusionMatrix(modB_pred, data1$classe)
+```
+
+# Annex
+
+## Details of Initial Dataset
+
+```{r}
+str(data)
+```
+
+## List of Removed Variables (107 variables)
+
+* user_name
+* raw_timestamp_part_1
+* raw_timestamp_part_2
+* cvtd_timestamp
+* new_window
+* num_window
+* kurtosis_roll_belt
+* kurtosis_picth_belt
+* kurtosis_yaw_belt
+* skewness_roll_belt
+* skewness_roll_belt.1
+* skewness_yaw_belt
+* max_roll_belt
+* max_picth_belt
+* max_yaw_belt
+* min_roll_belt
+* min_pitch_belt
+* min_yaw_belt
+* amplitude_roll_belt
+* amplitude_pitch_belt
+* amplitude_yaw_belt
+* var_total_accel_belt
+* avg_roll_belt
+* stddev_roll_belt
+* var_roll_belt
+* avg_pitch_belt
+* stddev_pitch_belt
+* var_pitch_belt
+* avg_yaw_belt
+* stddev_yaw_belt
+* var_accel_arm
+* avg_roll_arm
+* stddev_roll_arm
+* var_roll_arm
+* avg_pitch_arm
+* stddev_pitch_arm
+* var_pitch_arm
+* avg_yaw_arm
+* stddev_yaw_arm
+* var_yaw_arm
+* kurtosis_roll_arm
+* kurtosis_picth_arm
+* kurtosis_yaw_arm
+* skewness_roll_arm
+* skewness_pitch_arm
+* skewness_yaw_arm
+* max_roll_arm
+* max_picth_arm
+* max_yaw_arm
+* min_roll_arm
+* min_pitch_arm
+* min_yaw_arm
+* amplitude_roll_arm
+* amplitude_pitch_arm
+* amplitude_yaw_arm
+* kurtosis_roll_dumbbell
+* kurtosis_picth_dumbbell
+* kurtosis_yaw_dumbbell
+* skewness_roll_dumbbell
+* skewness_pitch_dumbbell
+* skewness_yaw_dumbbell
+* max_roll_dumbbell
+* max_picth_dumbbell
+* max_yaw_dumbbell
+* min_roll_dumbbell
+* min_pitch_dumbbell
+* min_yaw_dumbbell
+* amplitude_roll_dumbbell
+* amplitude_pitch_dumbbell
+* amplitude_yaw_dumbbell
+* var_accel_dumbbell
+* avg_roll_dumbbell
+* stddev_roll_dumbbell
+* var_roll_dumbbell
+* avg_pitch_dumbbell
+* stddev_pitch_dumbbell
+* var_pitch_dumbbell
+* avg_yaw_dumbbell
+* stddev_yaw_dumbbell
+* var_yaw_dumbbell
+* kurtosis_roll_forearm
+* kurtosis_picth_forearm
+* kurtosis_yaw_forearm
+* skewness_roll_forearm
+* skewness_pitch_forearm
+* skewness_yaw_forearm
+* max_roll_forearm
+* max_picth_forearm
+* max_yaw_forearm
+* min_roll_forearm
+* min_pitch_forearm
+* min_yaw_forearm
+* amplitude_roll_forearm
+* amplitude_pitch_forearm
+* amplitude_yaw_forearm
+* var_accel_forearm
+* avg_roll_forearm
+* stddev_roll_forearm
+* var_roll_forearm
+* avg_pitch_forearm
+* stddev_pitch_forearm
+* var_pitch_forearm
+* avg_yaw_forearm
+* stddev_yaw_forearm
+* var_yaw_forearm
+* var_yaw_belt
